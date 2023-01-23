@@ -1,0 +1,27 @@
+package com.foogaro.data.cache;
+
+import com.foogaro.data.cache.patterns.ReadReplica;
+import com.foogaro.data.cache.patterns.RefreshAhead;
+import gears.GearsBuilder;
+import gears.records.KeysReaderRecord;
+
+public class PersonReadReplica extends ReadReplica {
+
+    public PersonReadReplica() {
+        RGManager.register(this);
+    }
+
+    @Override
+    public String getKeyPattern() {
+        return "person:*";
+    }
+
+    public void onProcessEvent(KeysReaderRecord record) {
+        GearsBuilder.log("PersonReadReplica.Record: [" + record + "]");
+    }
+
+    public static void main(String[] args) {
+        new PersonReadReplica();
+    }
+
+}
