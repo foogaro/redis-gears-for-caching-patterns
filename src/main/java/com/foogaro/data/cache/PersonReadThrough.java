@@ -37,6 +37,7 @@ public class PersonReadThrough extends ReadThrough {
         GearsBuilder.log("PersonReadThrough.Record.Person: [" + person + "]");
         Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getName(), "lastname", person.getLastname(), "age", person.getAge()+""});
         GearsBuilder.log("PersonReadThrough.GearsBuilder.executeArray " + response);
+        GearsBuilder.overrideReply(response);
     }
 
     public static void main(String[] args) {
