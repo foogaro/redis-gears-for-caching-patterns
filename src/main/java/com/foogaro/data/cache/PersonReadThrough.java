@@ -8,6 +8,9 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PersonReadThrough extends ReadThrough {
 
     public PersonReadThrough() {
@@ -36,6 +39,14 @@ public class PersonReadThrough extends ReadThrough {
         Person person = session.find(Person.class, entityId);
         GearsBuilder.log("PersonReadThrough.Record.Person: [" + person + "]");
         Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getName(), "lastname", person.getLastname(), "age", person.getAge()+""});
+        GearsBuilder.log("PersonReadThrough.GearsBuilder.executeArray " + response);
+        List<String> commands = new ArrayList<>();
+        byte[][] commandBytes = GearsBuilder.getCommand();
+        for (byte[] arg : commandBytes) {
+            commands.add(new String(arg));
+        }
+        commands.forEach(s -> GearsBuilder.log("Command arg: " + s));
+        response = GearsBuilder.executeArray(commands.toArray(commands.toArray(new String[0])));
         GearsBuilder.log("PersonReadThrough.GearsBuilder.executeArray " + response);
         GearsBuilder.overrideReply(response);
     }
