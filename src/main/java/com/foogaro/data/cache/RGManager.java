@@ -6,9 +6,12 @@ import gears.operations.ForeachOperation;
 import gears.readers.KeysReader;
 import gears.records.KeysReaderRecord;
 
+import java.util.logging.Level;
+
 public class RGManager {
 
     public static void register(Pattern pattern) {
+        java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.OFF);
         KeysReader reader = new KeysReader()
                 .setPattern(pattern.getKeyPattern())
                 .setNoScan(true)
