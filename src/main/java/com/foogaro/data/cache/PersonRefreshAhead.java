@@ -1,15 +1,11 @@
 package com.foogaro.data.cache;
 
 import com.foogaro.data.cache.patterns.RefreshAhead;
-import com.foogaro.data.cache.patterns.WriteThrough;
 import com.foogaro.data.entities.Person;
+import com.foogaro.data.jpa.HibernateUtils;
 import gears.GearsBuilder;
+import gears.LogLevel;
 import gears.records.KeysReaderRecord;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
-
-import java.util.Map;
 
 public class PersonRefreshAhead extends RefreshAhead {
 
@@ -23,7 +19,23 @@ public class PersonRefreshAhead extends RefreshAhead {
     }
 
     public void onProcessEvent(KeysReaderRecord record) {
-        GearsBuilder.log("PersonRefreshAhead.Record: [" + record + "]");
+        try {
+            GearsBuilder.acquireRedisGil();
+            GearsBuilder.log("PersonRefreshAhead.Record: [" + record + "]");
+            String key = record.getKey();
+            Long entityId = Long.parseLong(key.split(":")[1]);
+            Person person = (Person) HibernateUtils.find(Person.class, entityId);
+            if (person != null) {
+                boolean avoidNotifications = GearsBuilder.setAvoidNotifications(true);
+                Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getName(), "lastname", person.getLastname(), "age", person.getAge() + ""});
+                GearsBuilder.setAvoidNotifications(avoidNotifications);
+                GearsBuilder.log("PersonRefreshAhead.GearsBuilder.executeArray " + response, LogLevel.DEBUG);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            GearsBuilder.releaseRedisGil();
+        }
     }
 
     public static void main(String[] args) {
