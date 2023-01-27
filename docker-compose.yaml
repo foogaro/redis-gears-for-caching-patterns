@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  mysqldb:
+    image: mysql:8.0.31
+    container_name: mysql
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQLDB_DATABASE
+    ports:
+      - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
+    networks:
+      - redis-workshop
+  redis:
+    image: redislabs/redisgears:1.2.5
+    container_name: redis
+    restart: on-failure
+    cap_add:
+      - SYS_RESOURCE
+    env_file: ./.env
+    expose:
+      - $REDIS_DOCKER_PORT
+    ports:
+      - $REDIS_LOCAL_PORT:$REDIS_DOCKER_PORT
+    volumes:
+      - ./target/redis-gears-for-caching-patterns-1.0.0.jar:/tmp/redis-gears-for-caching-patterns-1.0.0.jar
+    stdin_open: true
+    tty: true
+    depends_on:
+      - mysqldb
+    networks:
+      - redis-workshop
+  redis-setup:
+    image: redislabs/redisgears:1.2.5
+    container_name: redis-setup
+    depends_on:
+      - redis
+    restart: "no"
+    entrypoint: [ "bash", "-c", "/tmp/register-triggers.sh"]
+    volumes:
+      - ./target/redis-gears-for-caching-patterns-1.0.0.jar:/tmp/redis-gears-for-caching-patterns-1.0.0.jar
+      - ./register-triggers.sh:/tmp/register-triggers.sh
+    networks:
+      - redis-workshop
+networks:
+  redis-workshop:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.32.0.0/16
+
+
