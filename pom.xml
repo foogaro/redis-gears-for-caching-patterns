@@ -3,9 +3,9 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.foogaro.data</groupId>
-	<artifactId>redis-gears</artifactId>
+	<artifactId>redis-gears-for-caching-patterns</artifactId>
 	<version>1.0.0</version>
-	<name>redis-gears</name>
+	<name>redis-gears-for-caching-patterns</name>
 	<description>RedisGears example for {write,read}-{behind,through} use cases with a RDBMS like MySQL.</description>
 
 	<properties>
