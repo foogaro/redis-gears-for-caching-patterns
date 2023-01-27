@@ -1,7 +1,6 @@
 package com.foogaro.data.cache;
 
 import com.foogaro.data.cache.patterns.ReadReplica;
-import com.foogaro.data.cache.patterns.RefreshAhead;
 import gears.GearsBuilder;
 import gears.records.KeysReaderRecord;
 
@@ -17,7 +16,11 @@ public class PersonReadReplica extends ReadReplica {
     }
 
     public void onProcessEvent(KeysReaderRecord record) {
-        GearsBuilder.log("PersonReadReplica.Record: [" + record + "]");
+        try {
+            GearsBuilder.log("PersonReadReplica.Record: [" + record + "]");
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
