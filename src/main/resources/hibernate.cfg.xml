@@ -2,12 +2,12 @@
 <!DOCTYPE hibernate-configuration PUBLIC "-//Hibernate/Hibernate Configuration DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 <hibernate-configuration>
     <session-factory>
-        <property name="hibernate.connection.url">jdbc:mysql://34.154.40.201:3306/vdt</property>
+        <property name="hibernate.connection.url">jdbc:mysql://mysql:3306/vdt</property>
         <property name="hibernate.connection.username">root</property>
         <property name="hibernate.connection.password">root</property>
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
-        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.show_sql">false</property>
         <property name="hibernate.hbm2ddl.auto">update</property>
-        <mapping resource="Person.hbm.xml"></mapping>
+        <mapping resource="Person.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>
