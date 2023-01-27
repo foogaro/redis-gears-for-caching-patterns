@@ -2,11 +2,10 @@ package com.foogaro.data.cache;
 
 import com.foogaro.data.cache.patterns.WriteBehind;
 import com.foogaro.data.entities.Person;
+import com.foogaro.data.jpa.HibernateUtils;
 import gears.GearsBuilder;
+import gears.LogLevel;
 import gears.records.KeysReaderRecord;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 import java.util.Map;
 
@@ -25,28 +24,20 @@ public class PersonWriteBehind extends WriteBehind {
     }
 
     public void onProcessEvent(KeysReaderRecord record) {
-        GearsBuilder.log("PersonWriteBehind.Record: [" + record + "]");
-        Map<String, String> hash = record.getHashVal();
-        for (String key : hash.keySet()) {
-            String val = hash.get(key);
-            GearsBuilder.log("PersonWriteBehind.Record.Hash: [" + key + "," + val + "]");
+        try {
+            GearsBuilder.log("PersonWriteBehind.Record: [" + record + "]");
+            Map<String, String> hash = record.getHashVal();
+            Person person = new Person();
+            person.setId(Long.parseLong(record.getKey().split(":")[1]));
+            person.setName(hash.get("name"));
+            person.setLastname(hash.get("lastname"));
+            person.setAge(Integer.parseInt(hash.get("age")));
+
+            HibernateUtils.saveOrUpdate(person);
+            GearsBuilder.log("PersonWriteBehind.Record " + record.getHashVal() + " processed.", LogLevel.DEBUG);
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
-
-        Person person = new Person();
-        person.setId(Long.parseLong(record.getKey().substring(getKeyPattern().length()-1)));
-        person.setName(hash.get("name"));
-        person.setLastname(hash.get("lastname"));
-        person.setAge(Integer.parseInt(hash.get("age")));
-
-        Configuration configuration = new Configuration();
-        configuration.configure("hibernate.cfg.xml");
-        configuration.addAnnotatedClass(Person.class);
-        SessionFactory sessionFactory = configuration.buildSessionFactory();
-        Session session = sessionFactory.openSession();
-        session.beginTransaction();
-        session.saveOrUpdate(person);
-        session.getTransaction().commit();
-        GearsBuilder.log("PersonWriteBehind.Record " + record.getHashVal() + " processed.");
     }
 
     public static void main(String[] args) {
