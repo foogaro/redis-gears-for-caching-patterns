@@ -184,3 +184,339 @@ That's the Spring annotation to use when you want to update whatever you are upd
 ### @CacheEvict
 That's the Spring annotation to use when you want to delete whatever you are deleting from your persistence layer.
 
+# Demo
+It shouldn't be too complex. The demo is based on git and Docker Compose, which should be already in your environment, if not, follow the instructions for your specific OS at the following links:
+- https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+- https://docs.docker.com/compose/install/
+
+## Prerequisites
+### Step 1
+Clone the git repository as follows:
+```shell
+git clone git@github.com:foogaro/redis-gears-for-caching-patterns.git
+cd redis-gears-for-caching-patterns
+```
+
+### Step 2
+Run the services using Docker Compose, as follows:
+```shell
+docker-compose up
+[+] Running 4/4
+ ⠿ Network redis-gears-for-caching-patterns_redis-workshop  Created                                                                                                                                                                      0.3s
+ ⠿ Container mysql                                          Created                                                                                                                                                                      0.3s
+ ⠿ Container redis                                          Created                                                                                                                                                                      0.3s
+ ⠿ Container redis-setup                                    Created                                                                                                                                                                      0.2s
+Attaching to mysql, redis, redis-setup
+mysql        | 2023-01-29 15:07:48+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.31-1.el8 started.
+mysql        | 2023-01-29 15:07:49+00:00 [Note] [Entrypoint]: Switching to dedicated user 'mysql'
+mysql        | 2023-01-29 15:07:49+00:00 [Note] [Entrypoint]: Entrypoint script for MySQL Server 8.0.31-1.el8 started.
+redis        | 1:C 29 Jan 2023 15:07:49.668 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+redis        | 1:C 29 Jan 2023 15:07:49.669 # Redis version=6.2.5, bits=64, commit=00000000, modified=0, pid=1, just started
+redis        | 1:C 29 Jan 2023 15:07:49.669 # Configuration loaded
+redis        | 1:M 29 Jan 2023 15:07:49.671 * monotonic clock: POSIX clock_gettime
+redis        |                 _._
+redis        |            _.-``__ ''-._
+redis        |       _.-``    `.  `_.  ''-._           Redis 6.2.5 (00000000/0) 64 bit
+redis        |   .-`` .-```.  ```\/    _.,_ ''-._
+redis        |  (    '      ,       .-`  | `,    )     Running in standalone mode
+redis        |  |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
+redis        |  |    `-._   `._    /     _.-'    |     PID: 1
+redis        |   `-._    `-._  `-./  _.-'    _.-'
+redis        |  |`-._`-._    `-.__.-'    _.-'_.-'|
+redis        |  |    `-._`-._        _.-'_.-'    |           https://redis.io
+redis        |   `-._    `-._`-.__.-'_.-'    _.-'
+redis        |  |`-._`-._    `-.__.-'    _.-'_.-'|
+redis        |  |    `-._`-._        _.-'_.-'    |
+redis        |   `-._    `-._`-.__.-'_.-'    _.-'
+redis        |       `-._    `-.__.-'    _.-'
+redis        |           `-._        _.-'
+redis        |               `-.__.-'
+redis        |
+redis        | 1:M 29 Jan 2023 15:07:49.675 # Server initialized
+redis        | 1:M 29 Jan 2023 15:07:49.699 * <rg> RedisGears version 1.2.5, git_sha=2fc2cca83faea6ece258a2dbd37df4d1862cc995, compiled_os=linux-bullseye-x64
+
+...
+
+redis        | 1:M 29 Jan 2023 15:07:51.833 * <module> JAVA_GEARS: PersonWriteBehind.onRegistered - registrationId: 0000000000000000000000000000000000000000-1
+redis-setup  | OK
+redis        | 1:M 29 Jan 2023 15:07:52.328 * <module> JAVA_GEARS: PersonWriteThrough.onRegistered - registrationId: 0000000000000000000000000000000000000000-4
+redis-setup  | OK
+redis        | 1:M 29 Jan 2023 15:07:52.949 * <module> JAVA_GEARS: PersonReadThrough.onRegistered - registrationId: 0000000000000000000000000000000000000000-7
+redis-setup  | OK
+redis        | 1:M 29 Jan 2023 15:07:53.298 * <module> JAVA_GEARS: PersonRefreshAhead.onRegistered - registrationId: 0000000000000000000000000000000000000000-10
+redis-setup  | OK
+redis-setup exited with code 0
+mysql        | 2023-01-29T15:07:53.748652Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+mysql        | 2023-01-29 15:07:57+00:00 [Note] [Entrypoint]: Database files initialized
+mysql        | 2023-01-29 15:07:57+00:00 [Note] [Entrypoint]: Starting temporary server
+mysql        | 2023-01-29T15:07:57.386721Z 0 [Warning] [MY-011068] [Server] The syntax '--skip-host-cache' is deprecated and will be removed in a future release. Please use SET GLOBAL host_cache_size=0 instead.
+mysql        | 2023-01-29T15:07:57.393679Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.31) starting as process 131
+mysql        | 2023-01-29T15:07:57.418124Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+mysql        | 2023-01-29T15:07:57.839713Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+mysql        | 2023-01-29T15:07:58.285047Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+mysql        | 2023-01-29T15:07:58.285159Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+mysql        | 2023-01-29T15:07:58.289186Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/var/run/mysqld' in the path is accessible to all OS users. Consider choosing a different directory.
+mysql        | 2023-01-29T15:07:58.327323Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
+mysql        | 2023-01-29T15:07:58.327467Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.31'  socket: '/var/run/mysqld/mysqld.sock'  port: 0  MySQL Community Server - GPL.
+
+...
+
+mysql        | 2023-01-29T15:08:05.144020Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '::' port: 33060, socket: /var/run/mysqld/mysqlx.sock
+mysql        | 2023-01-29T15:08:05.144198Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.31'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server - GPL.
+```
+
+### Step 3
+Check that the containser are up and running by exposing the approriate ports; 6379 for Redis and 3306 for MySQL, as follows:
+```shell
+docker ps
+CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS          PORTS                               NAMES
+cd7b62e58a69   redislabs/redisgears:1.2.5   "docker-entrypoint.s…"   17 minutes ago   Up 17 minutes   0.0.0.0:6379->6379/tcp              redis
+b344c5d25cf9   mysql:8.0.31                 "docker-entrypoint.s…"   17 minutes ago   Up 17 minutes   0.0.0.0:3306->3306/tcp, 33060/tcp   mysql
+```
+
+
+## Pattern Write-Through
+The patter Write-Through implies that the data inserted into the cache are also propagated to the database in a synchronous way. The client will have to wait the entire data flow to happen before receiving the reply from Redis. Might be seconds.
+
+To do this, let's enter a key-value pair of type ```HASH``` data structure, by connecting to the redis container and using the ```redis-cli``` tool, as follows:
+```shell
+docker exec -it redis /bin/bash
+root@cd7b62e58a69:/data# redis-cli
+127.0.0.1:6379> keys *
+(empty list or set)
+127.0.0.1:6379> hset person:1 name Luigi lastname Fugaro age 44
+Executing command...
+(integer) 3
+127.0.0.1:6379> keys *
+1) "person:1"
+127.0.0.1:6379> type person:1
+"hash"
+127.0.0.1:6379> hmget person:1 name lastname age
+1) "Luigi"
+2) "Fugaro"
+3) "44"
+127.0.0.1:6379>  
+```
+
+In the log of the ```redis``` service there should be the following entries:
+
+```shell
+redis        | 1:M 29 Jan 2023 15:18:03.656 * <module> JAVA_GEARS: PersonWriteThrough.Record: [{"key":"person:1","event":"hset","type":3,"stringVal":null,"hashVal":{"name":"Luigi","age":"44","lastname":"Fugaro"},"listVal":null,"setVal":null}]
+redis        | Jan 29, 2023 3:18:05 PM org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl logSelectedDialect
+redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialect
+```
+
+Which means the ```PersonWriteThrough``` was triggered and its logic was executed by inserting the cache value as ```record``` into the table ```person``` in MySQL.
+
+Let's check the database, by connecting to it and listing the records of the table person, as follows:
+
+```shell
+docker exec -it mysql mysql -u root -proot
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 9
+Server version: 8.0.31 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2022, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| vdt                |
++--------------------+
+5 rows in set (0.03 sec)
+
+mysql> use vdt;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> show tables;
++---------------+
+| Tables_in_vdt |
++---------------+
+| person        |
++---------------+
+1 row in set (0.01 sec)
+
+mysql> select * from person;
++----+-------+----------+------+
+| id | name  | lastname | age  |
++----+-------+----------+------+
+|  1 | Luigi | Fugaro   |   44 |
++----+-------+----------+------+
+1 row in set (0.00 sec)
+
+mysql>
+```
+
+All looks good!
+
+## Pattern Write-Behind
+The pattern Write-Behind implies that the data inserted into the cache are also propagated to the database in an _asynchronous_ way. The client will immediately receive the reply from Redis. Might be sub-millisecond.
+
+Because you cannot have a Write-Through and a Write-Behind strategy at the same time for the same ```entity```, to do the test I set the keyPattern of the class ```com.foogaro.data.cache.PersonWriteBehind``` to "developer:*", so the new entry will bound to it.
+
+To do this, let's enter a key-value pair of type ```HASH``` data structure, by connecting to the redis container and using the ```redis-cli``` tool, as follows:
+```shell
+docker exec -it redis /bin/bash
+root@cd7b62e58a69:/data# redis-cli
+127.0.0.1:6379> keys *
+(empty list or set)
+127.0.0.1:6379> hset developer:2 name Luigi lastname Fugaro age 44
+(integer) 3
+127.0.0.1:6379> keys *
+1) "developer:2"
+2) "person:1"
+127.0.0.1:6379> type developer:2
+"hash"
+127.0.0.1:6379> hmget developer:2 name lastname age
+1) "Luigi"
+2) "Fugaro"
+3) "44"
+127.0.0.1:6379>  
+```
+
+In the log of the ```redis``` service there should be the following entries:
+
+```shell
+redis        | 1:M 29 Jan 2023 15:53:45.580 * <module> JAVA_GEARS: PersonWriteBehind.Record: [{"key":"developer:2","event":"hset","type":3,"stringVal":null,"hashVal":{"name":"Luigi","age":"44","lastname":"Fugaro"},"listVal":null,"setVal":null}]
+redis        | Jan 29, 2023 3:53:47 PM org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl logSelectedDialect
+redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialect
+```
+
+Which means the ```PersonWriteBehind``` was triggered and its logic was executed by inserting the cache value as ```record``` into the table ```person``` in MySQL.
+
+Let's check the database, by connecting to it and listing the records of the table person, as follows:
+
+```shell
+docker exec -it mysql mysql -u root -proot
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 9
+Server version: 8.0.31 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2022, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
+| vdt                |
++--------------------+
+5 rows in set (0.03 sec)
+
+mysql> use vdt;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+
+Database changed
+mysql> show tables;
++---------------+
+| Tables_in_vdt |
++---------------+
+| person        |
++---------------+
+1 row in set (0.01 sec)
+
+mysql> select * from person;
++----+-------+----------+------+
+| id | name  | lastname | age  |
++----+-------+----------+------+
+|  1 | Luigi | Fugaro   |   44 |
+|  2 | Luigi | Fugaro   |   44 |
++----+-------+----------+------+
+2 rows in set (0.00 sec)
+
+mysql>
+```
+
+All looks good!
+
+## Pattern Read-Through
+The pattern Read-Through implies that when a data is requested from the cache, and it's not available, the data will be fetched directly from the database, synchronously, put it into the cache and returned to the client. The latter will have to wait the entire data flow to happen before receiving the reply from Redis. Might be seconds.
+
+To do this, let's try to read the value for key "person:2", which shouldn't be found as we entered "developer:2".
+
+Let's connect to the redis container and using the ```redis-cli``` tool, as follows:
+
+```shell
+docker exec -it redis /bin/bash
+root@cd7b62e58a69:/data# redis-cli
+127.0.0.1:6379> keys *
+1) "developer:2"
+2) "person:1"
+127.0.0.1:6379>  hmget person:2 name lastname age
+1) "Luigi"
+2) "Fugaro"
+3) "44"
+127.0.0.1:6379> keys *
+1) "person:2"
+2) "developer:2"
+3) "person:1"
+127.0.0.1:6379>
+```
+In the log of the ```redis``` service there should be the following entries:
+
+```shell
+redis        | 1:M 29 Jan 2023 16:31:36.601 * <module> JAVA_GEARS: PersonReadThrough.Record: [{"key":"person:2","event":"keymiss","type":-1,"stringVal":null,"hashVal":null,"listVal":null,"setVal":null}]
+redis        | Jan 29, 2023 4:31:37 PM org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl logSelectedDialect
+redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialect
+```
+
+Which means the ```PersonReadThrough``` was triggered and its logic was executed by fetching the value from the table ```person``` in MySQL with ```ID``` "2".
+
+## Pattern Refresh-Ahead
+The purpose of the pattern Refresh-Ahead is to keep the data up-to-date. An example could be to refresh new/updated data for all those entries that were kept into the cache for too long, by using a time-to-live (TTL) on the key.
+
+To do this, let's try to add a TTL of 5 seconds to the key "person:2", wait the expiration time and read the value from the cache.
+
+Let's connect to the redis container and using the ```redis-cli``` tool, as follows:
+
+```shell
+docker exec -it redis /bin/bash
+root@cd7b62e58a69:/data# redis-cli
+127.0.0.1:6379> keys *
+1) "developer:2"
+2) "person:1"
+127.0.0.1:6379> expire person:2 5
+(integer) 1
+127.0.0.1:6379>
+```
+In the log of the ```redis``` service there should be the following entries:
+
+```shell
+redis        | 1:M 29 Jan 2023 16:41:11.553 * <module> JAVA_GEARS: PersonRefreshAhead.Record: [{"key":"person:2","event":"expired","type":-1,"stringVal":null,"hashVal":null,"listVal":null,"setVal":null}]
+redis        | Jan 29, 2023 4:41:12 PM org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl logSelectedDialect
+redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialect
+```
+
+Which means the ```PersonRefreshAhead``` was triggered and its logic was executed by fetching the value from the table ```person``` in MySQL with ```ID``` "2".
+
+The logic is almost the same as per the Read-Through patterns, except for the fact that the event is not a _keymiss_ but **expired**.
+
+## Pattern Read-Replica
+
+Stay tuned.
+
