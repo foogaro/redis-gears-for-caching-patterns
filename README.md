@@ -266,7 +266,7 @@ mysql        | 2023-01-29T15:08:05.144198Z 0 [System] [MY-010931] [Server] /usr/
 ```
 
 ### Step 3
-Check that the containser are up and running by exposing the approriate ports; 6379 for Redis and 3306 for MySQL, as follows:
+Check that the containers are up and running by exposing the appropriate ports; 6379 for Redis and 3306 for MySQL, as follows:
 ```shell
 docker ps
 CONTAINER ID   IMAGE                        COMMAND                  CREATED          STATUS          PORTS                               NAMES
@@ -487,10 +487,12 @@ redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialec
 
 Which means the ```PersonReadThrough``` was triggered and its logic was executed by fetching the value from the table ```person``` in MySQL with ```ID``` "2".
 
+All looks good!
+
 ## Pattern Refresh-Ahead
 The purpose of the pattern Refresh-Ahead is to keep the data up-to-date. An example could be to refresh new/updated data for all those entries that were kept into the cache for too long, by using a time-to-live (TTL) on the key.
 
-To do this, let's try to add a TTL of 5 seconds to the key "person:2", wait the expiration time and read the value from the cache.
+To do this, let's try to add a TTL of 5 seconds to the key "person:2", and wait for the expiration time, so that the key gets deleted from the cache.
 
 Let's connect to the redis container and using the ```redis-cli``` tool, as follows:
 
@@ -512,9 +514,9 @@ redis        | Jan 29, 2023 4:41:12 PM org.hibernate.engine.jdbc.dialect.interna
 redis        | INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQLDialect
 ```
 
-Which means the ```PersonRefreshAhead``` was triggered and its logic was executed by fetching the value from the table ```person``` in MySQL with ```ID``` "2".
+Which means the ```PersonRefreshAhead``` was triggered and its logic was executed by fetching the value from the table ```person``` in MySQL with ```ID``` "2" and put it back into the cache.
 
-The logic is almost the same as per the Read-Through patterns, except for the fact that the event is not a _keymiss_ but **expired**.
+The logic is almost the same as per the Read-Through patterns, except for the fact that the patterns gets triggered on the **expired** event and not on the _keymiss_ event.
 
 ## Pattern Read-Replica
 
