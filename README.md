@@ -1,4 +1,5 @@
 # Caching Patterns
+
 ## Introduction
 Caching patterns are well known techniques to keep your data up to date in your caching layer.
 
@@ -28,6 +29,8 @@ Once the data is retrieved from the database, it gets also set into the cache fo
 
 ![Cache-Aside read](images/Cache-Aside-AL.png)
 
+More detail in the [Caching at application layer](#caching-at-application-layer) section.
+
 ### Read-Through
 This pattern describes how the data should be retrieved.
 The application layer, the service, only connects to the Redis cache, without ever connecting to the database.
@@ -39,6 +42,8 @@ If the data is available, it gets returned immediately to the service.
 
 If the data is __not__ available, Redis looks for it into the database.
 Once the data is retrieved from the database, it gets set into the cache for later use, and finally returned to the service, and then to the requester.
+
+More detail in the demo [section](#pattern-read-through).
 
 ![Read-Through](images/Read-Through-CL.png)
 
@@ -54,6 +59,12 @@ Then entire chain is synchronous.
 
 ![Write-Through](images/Write-Through-AL.png)
 
+Moving the logic from the application layer to the cache layer.
+
+This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best you use case.
+
+More detail in the demo [section](#pattern-write-through).
+
 ![Write-Through](images/Write-Through-CL.png)
 
 ### Write-Behind (Write-back)
@@ -68,19 +79,27 @@ The last step of the chain is asynchronous, that is Redis calling the persistenc
 
 ![Write-Behind (Write-back)](images/Write-Behind-AL.png)
 
+Moving the logic from the application layer to the cache layer.
+
+This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best you use case.
+
 ![Write-Behind (Write-back)](images/Write-Behind-CL.png)
 
+More detail in the demo [section](#pattern-write-behind).
 
 ### Refresh Ahead
 This pattern describes how the data can be updated automatically whenever it's expired.
 
 ![Refresh-Ahead](images/Refresh-Ahead-CL.png)
 
+More detail in the demo [section](#pattern-refresh-ahead).
+
 ### Read Replica
 This pattern describes how the data can be updated automatically from the database to the caching layer.
 
 ![Read-Replica](images/Read-Replica-CL.png)
 
+More detail in the demo [section](#pattern-read-replica).
 
 # The Cache layer
 The caching layer is basically composed by two main components:
