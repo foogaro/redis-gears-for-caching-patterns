@@ -539,5 +539,187 @@ The logic is almost the same as per the Read-Through patterns, except for the fa
 
 ## Pattern Read-Replica
 
-Stay tuned.
+The pattern Read-Replica comes from the Change Data Capture software design principals. Its goal is to detect changes from the source databases and push them to other systems, such as a caching layer, using message notification.
+
+The solution is based on Debezium, a well known open-source project sponsored by Red Hat &reg;&copy;&trade;, which provides many connectors (aka Source Connectors), to detect changes happening in the source databases (PostgreSQL, MySQL, Oracle, MS SQL Server, DB2, MongoDB, Cassandra, Vitess, Spanner).
+In addition to the Source Connectors, Debezium provides even more Sink Connectors, whose goal is to push those changes to other systems.
+
+Debezium provides the Redis Sink Connector, which is used in this demo.
+
+The following Docker configuration has been added to the ```docker-compose.yaml``` file:
+```yaml
+debezium:
+  image: debezium/server
+  container_name: debezium
+  restart: "no"
+  depends_on:
+    - redis
+  entrypoint: [ "echo", "Service debezium temporary disabled" ]
+  env_file: ./.env
+  environment:
+    - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+    - MYSQL_DATABASE=$MYSQLDB_DATABASE
+  ports:
+    - $DEBEZIUM_LOCAL_PORT:$DEBEZIUM_DOCKER_PORT
+  volumes:
+    - ./debezium-conf:/debezium/conf
+    - ./debezium-data:/debezium/data
+  networks:
+  - demo
+```
+
+You may have noticed the presence of the entrypoint statement as a trick to _temporary_ disable Debezium when demoing the ```Write-*``` patterns.
+To show the Read-Replica pattern in action, just comment the entrypoint statement, and everything should work as expected.
+```yaml
+debezium:
+  image: debezium/server
+  container_name: debezium
+  restart: "no"
+  depends_on:
+    - redis
+#  entrypoint: [ "echo", "Service debezium temporary disabled" ]
+  env_file: ./.env
+  environment:
+    - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+    - MYSQL_DATABASE=$MYSQLDB_DATABASE
+  ports:
+    - $DEBEZIUM_LOCAL_PORT:$DEBEZIUM_DOCKER_PORT
+  volumes:
+    - ./debezium-conf:/debezium/conf
+    - ./debezium-data:/debezium/data
+  networks:
+  - demo
+```
+
+Let's start everything with ```docker-compose up```, and you should see now the Debezium service starting up, as follows:
+
+```shell
+debezium     | SLF4J: Class path contains multiple SLF4J bindings.
+debezium     | SLF4J: Found binding in [jar:file:/debezium/lib/slf4j-jboss-logmanager-1.2.0.Final.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+debezium     | SLF4J: Found binding in [jar:file:/debezium/lib/logback-classic-1.2.10.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+debezium     | SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+debezium     | SLF4J: Actual binding is of type [org.slf4j.impl.Slf4jLoggerFactory]
+debezium     |        __       __                 _
+debezium     |   ____/ /___   / /_   ___  ____   (_)__  __ ____ ___
+debezium     |  / __  // _ \ / __ \ / _ \/_  /  / // / / // __ `__ \
+debezium     | / /_/ //  __// /_/ //  __/ / /_ / // /_/ // / / / / /
+debezium     | \__,_/ \___//_.___/ \___/ /___//_/ \__,_//_/ /_/ /_/
+debezium     |
+debezium     |
+debezium     |
+debezium     |                       Powered by Quarkus 2.14.0.Final
+
+...
+
+debezium     | 2023-02-01 17:13:38,460 INFO  [io.deb.con.mys.MySqlStreamingChangeEventSource] (blc-mysql:3306) Connected to MySQL binlog at mysql:3306, starting at MySqlOffsetContext [sourceInfoSchema=Schema{io.debezium.connector.mysql.Source:STRUCT}, sourceInfo=SourceInfo [currentGtid=null, currentBinlogFilename=mysql-bin.000003, currentBinlogPosition=1815, currentRowNumber=0, serverId=0, sourceTime=2023-02-01T17:13:38.190Z, threadId=-1, currentQuery=null, tableIds=[vdt.person], databaseName=vdt], snapshotCompleted=true, transactionContext=TransactionContext [currentTransactionId=null, perTableEventCount={}, totalEventCount=0], restartGtidSet=9687809c-a253-11ed-b30d-0242ac200002:1-12, currentGtidSet=9687809c-a253-11ed-b30d-0242ac200002:1-12, restartBinlogFilename=mysql-bin.000003, restartBinlogPosition=1815, restartRowsToSkip=0, restartEventsToSkip=0, currentEventLengthInBytes=0, inTransaction=false, transactionId=null, incrementalSnapshotContext =IncrementalSnapshotContext [windowOpened=false, chunkEndPosition=null, dataCollectionsToSnapshot=[], lastEventKeySent=null, maximumKey=null]]
+debezium     | 2023-02-01 17:13:38,463 INFO  [io.deb.con.mys.MySqlStreamingChangeEventSource] (debezium-mysqlconnector-vdt-change-event-source-coordinator) Waiting for keepalive thread to start
+debezium     | 2023-02-01 17:13:38,468 INFO  [io.deb.uti.Threads] (blc-mysql:3306) Creating thread debezium-mysqlconnector-vdt-binlog-client
+debezium     | 2023-02-01 17:13:38,570 INFO  [io.deb.con.mys.MySqlStreamingChangeEventSource] (debezium-mysqlconnector-vdt-change-event-source-coordinator) Keepalive thread is running
+```
+
+In case you have problems, try to delete the ```mysql-data``` folder from your host, and try again.
+
+Let's check on Redis what we have:
+```shell
+docker exec -it redis /bin/bash
+root@7093c6289bbc:/data# redis-cli
+127.0.0.1:6379> keys *
+1) "metadata:debezium:offsets"
+2) "vdt"
+3) "metadata:debezium:schema_history"
+127.0.0.1:6379>
+```
+
+Debezium already created its staff to use Redis, both as internal storage (did you notice that we didn't use a Kafka cluster at all???) and to push the changes to.
+
+Let's add a new record for the table Person into MySQL, by connecting to the MySQL, as follows:
+
+```shell
+docker exec -it mysql mysql -u root -proot
+mysql> use vdt;
+
+Database changed
+mysql> select * from person;
+Empty set (0.00 sec)
+
+mysql> INSERT INTO person VALUES (1, 'Luigi','Fugaro',44);
+Query OK, 1 row affected (0.02 sec)
+
+mysql> select * from person;
++----+-----------+----------+------+
+| id | firstname | lastname | age  |
++----+-----------+----------+------+
+|  1 | Luigi     | Fugaro   |   44 |
++----+-----------+----------+------+
+1 row in set (0.00 sec)
+
+mysql>
+```
+
+Debezium should have detected the changes, that is the insert, and stored the metadata into Redis. Redis then should have picked those info up and processed them by inserting a new key into the cache.
+
+Let's see...
+
+In the log of the redis and debezium services, there should be the following entries:
+
+```shell
+debezium     | 2023-02-01 17:16:06,413 INFO  [io.deb.con.com.BaseSourceTask] (pool-7-thread-1) 9 records sent during previous 00:02:31.55, last recorded offset of {server=vdt} partition is {transaction_id=null, ts_sec=1675271766, file=mysql-bin.000003, pos=1894, gtids=9687809c-a253-11ed-b30d-0242ac200002:1-12, row=1, server_id=1, event=3}
+redis        | 1:M 01 Feb 2023 17:16:06.777 * <module> JAVA_GEARS: PersonReadReplica.onProcessEvent.Record: [{"key":"vdt.vdt.person","event":"xadd","type":7,"stringVal":null,"hashVal":null,"listVal":null,"setVal":null}]
+redis        | 1:M 01 Feb 2023 17:16:06.781 * <module> JAVA_GEARS: PersonReadReplica.onProcessEvent.key: vdt.vdt.person
+redis        | 1:M 01 Feb 2023 17:16:06.793 * <module> JAVA_GEARS: PersonReadReplica.onProcessEvent.response[0]: [Ljava.lang.Object;@1c305386
+redis        | 1:M 01 Feb 2023 17:16:06.795 * <module> JAVA_GEARS: List item: vdt.vdt.person
+redis        | 1:M 01 Feb 2023 17:16:06.795 * <module> JAVA_GEARS: List item: 1675271766422-0
+redis        | 1:M 01 Feb 2023 17:16:06.795 * <module> JAVA_GEARS: List item: {"schema":{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"}],"optional":false,"name":"vdt.vdt.person.Key"},"payload":{"id":1}}
+redis        | 1:M 01 Feb 2023 17:16:06.795 * <module> JAVA_GEARS: List item: {"schema":{"type":"struct","fields":[{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"},{"type":"string","optional":true,"field":"firstname"},{"type":"string","optional":true,"field":"lastname"},{"type":"int32","optional":true,"field":"age"}],"optional":true,"name":"vdt.vdt.person.Value","field":"before"},{"type":"struct","fields":[{"type":"int32","optional":false,"field":"id"},{"type":"string","optional":true,"field":"firstname"},{"type":"string","optional":true,"field":"lastname"},{"type":"int32","optional":true,"field":"age"}],"optional":true,"name":"vdt.vdt.person.Value","field":"after"},{"type":"struct","fields":[{"type":"string","optional":false,"field":"version"},{"type":"string","optional":false,"field":"connector"},{"type":"string","optional":false,"field":"name"},{"type":"int64","optional":false,"field":"ts_ms"},{"type":"string","optional":true,"name":"io.debezium.data.Enum","version":1,"parameters":{"allowed":"true,last,false,incremental"},"de
+redis        | 1:M 01 Feb 2023 17:16:06.888 * <module> JAVA_GEARS: PersonReadReplica.processPayload.person: Person{id=1, firstname='Luigi', lastname='Fugaro', age=44}
+redis        | 1:M 01 Feb 2023 17:16:06.898 * <module> JAVA_GEARS: PersonReadReplica.processPayload.response: 4
+redis        | 1:M 01 Feb 2023 17:16:06.898 * <module> JAVA_GEARS: PersonReadReplica.onProcessEvent.GearsBuilder.executeArray [Ljava.lang.Object;@1c305386
+```
+
+All looks good.
+
+Inside redis
+```shell
+127.0.0.1:6379> keys *
+1) "vdt.vdt.person"
+2) "metadata:debezium:offsets"
+3) "metadata:debezium:schema_history"
+4) "vdt"
+5) "person:1"
+```
+Two more keys were added.
+
+Key ```person:1``` is the key which represent the corresponding record in MySQL, which is what we wanted:
+```shell
+127.0.0.1:6379> hmget person:1 id firstname lastname age
+1) "1"
+2) "Luigi"
+3) "Fugaro"
+4) "44"
+```
+
+Key ```vdt.vdt.person``` is the key used by Debezium to store event information, and it's a Redis Stream type:
+
+```shell
+127.0.0.1:6379> type vdt.vdt.person
+stream
+127.0.0.1:6379> xread count 1 streams vdt.vdt.person 0
+1) 1) "vdt.vdt.person"
+   2) 1) 1) "1675271766422-0"
+         2) 1) "{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"}],\"optional\":false,\"name\":\"vdt.vdt.person.Key\"},\"payload\":{\"id\":1}}"
+            2) "{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"firstname\"},{\"type\":\"string\",\"optional\":true,\"field\":\"lastname\"},{\"type\":\"int32\",\"optional\":true,\"field\":\"age\"}],\"optional\":true,\"name\":\"vdt.vdt.person.Value\",\"field\":\"before\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"firstname\"},{\"type\":\"string\",\"optional\":true,\"field\":\"lastname\"},{\"type\":\"int32\",\"optional\":true,\"field\":\"age\"}],\"optional\":true,\"name\":\"vdt.vdt.person.Value\",\"field\":\"after\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},{\"type\":\"string\",\"optional\":false,\"field\":\"name\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"ts_ms\"},{\"type\":\"string\",\"optional\":true,\"name\":\"io.debezium.data.Enum\",\"version\":1,\"parameters\":{\"allowed\":\"true,last,false,incremental\"},\"default\":\"false\",\"field\":\"snapshot\"},{\"type\":\"string\",\"optional\":false,\"field\":\"db\"},{\"type\":\"string\",\"optional\":true,\"field\":\"sequence\"},{\"type\":\"string\",\"optional\":true,\"field\":\"table\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"server_id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"gtid\"},{\"type\":\"string\",\"optional\":false,\"field\":\"file\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"pos\"},{\"type\":\"int32\",\"optional\":false,\"field\":\"row\"},{\"type\":\"int64\",\"optional\":true,\"field\":\"thread\"},{\"type\":\"string\",\"optional\":true,\"field\":\"query\"}],\"optional\":false,\"name\":\"io.debezium.connector.mysql.Source\",\"field\":\"source\"},{\"type\":\"string\",\"optional\":false,\"field\":\"op\"},{\"type\":\"int64\",\"optional\":true,\"field\":\"ts_ms\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"string\",\"optional\":false,\"field\":\"id\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"total_order\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"data_collection_order\"}],\"optional\":true,\"name\":\"event.block\",\"version\":1,\"field\":\"transaction\"}],\"optional\":false,\"name\":\"vdt.vdt.person.Envelope\",\"version\":1},\"payload\":{\"before\":null,\"after\":{\"id\":1,\"firstname\":\"Luigi\",\"lastname\":\"Fugaro\",\"age\":44},\"source\":{\"version\":\"2.2.0.Alpha1\",\"connector\":\"mysql\",\"name\":\"vdt\",\"ts_ms\":1675271766000,\"snapshot\":\"false\",\"db\":\"vdt\",\"sequence\":null,\"table\":\"person\",\"server_id\":1,\"gtid\":\"9687809c-a253-11ed-b30d-0242ac200002:13\",\"file\":\"mysql-bin.000003\",\"pos\":2105,\"row\":0,\"thread\":17,\"query\":null},\"op\":\"c\",\"ts_ms\":1675271766219,\"transaction\":null}}"
+```
+
+The first element is the name of the stream.
+
+The second element represent the timestamp of the generated event, plus a sequence ID.
+
+The last two elements are the effective payload of the event.
+
+The first one gives you a reference of the primary key of the record and its value, as a JSON document (easier to extract information).
+
+The second one is another JSON document where you can find "useful" metadata (depends on how deep your interest is) and the record at ```before``` (think of it as at time-0) and the record at ```after``` (think of it as at time-1).
+
+By processing the event and its payload you can clearly understand which ley you need to manage in Redis, if it's a new key (insert), old key (update), or a delete operation, in that case payload-before would be not null and payload-after would be null.
+
 
