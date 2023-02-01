@@ -33,13 +33,12 @@ public class PersonReadThrough extends ReadThrough {
             Long entityId = Long.parseLong(record.getKey().split(":")[1]);
             Person person = (Person) HibernateUtils.find(Person.class, entityId);
             if (person != null) {
-                Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getName(), "lastname", person.getLastname(), "age", person.getAge() + ""});
                 List<String> commands = new ArrayList<>();
                 byte[][] commandBytes = GearsBuilder.getCommand();
                 for (byte[] arg : commandBytes) {
                     commands.add(new String(arg));
                 }
-                response = GearsBuilder.executeArray(commands.toArray(commands.toArray(new String[0])));
+                Object response = GearsBuilder.executeArray(commands.toArray(commands.toArray(new String[0])));
                 GearsBuilder.log("PersonReadThrough.GearsBuilder.redo.executeArray " + response, LogLevel.DEBUG);
                 if (response != null && response.getClass().isArray()) {
                     Object[] arr = (Object[]) response;
