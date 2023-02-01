@@ -61,7 +61,7 @@ Then entire chain is synchronous.
 
 Moving the logic from the application layer to the cache layer.
 
-This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best you use case.
+This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best for your use case.
 
 More detail in the demo [section](#pattern-write-through).
 
@@ -81,7 +81,7 @@ The last step of the chain is asynchronous, that is Redis calling the persistenc
 
 Moving the logic from the application layer to the cache layer.
 
-This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best you use case.
+This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best for your use case.
 
 ![Write-Behind (Write-back)](images/Write-Behind-CL.png)
 
@@ -720,6 +720,6 @@ The first one gives you a reference of the primary key of the record and its val
 
 The second one is another JSON document where you can find "useful" metadata (depends on how deep your interest is) and the record at ```before``` (think of it as at time-0) and the record at ```after``` (think of it as at time-1).
 
-By processing the event and its payload you can clearly understand which ley you need to manage in Redis, if it's a new key (insert), old key (update), or a delete operation, in that case payload-before would be not null and payload-after would be null.
+By processing the event and its payload you can clearly understand which key you need to manage in Redis, if it's a new key (insert), old key (update), or a delete operation, in that case payload-before would be not null and payload-after would be null.
 
 
