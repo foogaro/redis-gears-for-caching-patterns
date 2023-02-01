@@ -27,7 +27,8 @@ public class PersonRefreshAhead extends RefreshAhead {
             Person person = (Person) HibernateUtils.find(Person.class, entityId);
             if (person != null) {
                 boolean avoidNotifications = GearsBuilder.setAvoidNotifications(true);
-                Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getName(), "lastname", person.getLastname(), "age", person.getAge() + ""});
+                //Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getFirstname(), "lastname", person.getLastname(), "age", person.getAge() + ""});
+                Object response = GearsBuilder.executeArray(generateHSET(person,entityId+""));
                 GearsBuilder.setAvoidNotifications(avoidNotifications);
                 GearsBuilder.log("PersonRefreshAhead.GearsBuilder.executeArray " + response, LogLevel.DEBUG);
             }
