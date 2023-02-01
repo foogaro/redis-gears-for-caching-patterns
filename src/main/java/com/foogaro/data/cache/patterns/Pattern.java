@@ -45,8 +45,10 @@ public abstract class Pattern implements OnProcessEvent, OnRegisteredOperation, 
         for (int i = 0; i < fields.length; i++) {
             var field = fields[i];
             field.setAccessible(true);
-            redisCommand[redisCommandIndex++] = field.getName();
-            redisCommand[redisCommandIndex++] = field.get(obj).toString();
+            String fieldName = field.getName();
+            Object fieldValue = field.get(obj);
+            redisCommand[redisCommandIndex++] = fieldName;
+            redisCommand[redisCommandIndex++] = (fieldValue != null ? fieldValue.toString() : null) ;
         }
 
         return redisCommand;
