@@ -28,7 +28,7 @@ public class PersonWriteThrough extends WriteThrough {
             Map<String, String> hash = record.getHashVal();
             Person person = new Person();
             person.setId(Long.parseLong(record.getKey().split(":")[1]));
-            person.setName(hash.get("name"));
+            person.setFirstname(hash.get("firstname"));
             person.setLastname(hash.get("lastname"));
             person.setAge(Integer.parseInt(hash.get("age")));
 
