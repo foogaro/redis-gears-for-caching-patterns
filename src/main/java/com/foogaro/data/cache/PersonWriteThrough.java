@@ -33,7 +33,7 @@ public class PersonWriteThrough extends WriteThrough {
             person.setAge(Integer.parseInt(hash.get("age")));
 
             HibernateUtils.saveOrUpdate(person);
-            GearsBuilder.log("PersonWriteThrough.Record " + record.getHashVal() + " processed.", LogLevel.DEBUG);
+            GearsBuilder.log("PersonWriteThrough.Record " + record.getHashVal() + " processed.");
         } catch (Throwable t) {
             t.printStackTrace();
         }

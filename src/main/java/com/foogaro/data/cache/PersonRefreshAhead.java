@@ -30,7 +30,7 @@ public class PersonRefreshAhead extends RefreshAhead {
                 //Object response = GearsBuilder.executeArray(new String[]{"HSET", "person:" + person.getId(), "name", person.getFirstname(), "lastname", person.getLastname(), "age", person.getAge() + ""});
                 Object response = GearsBuilder.executeArray(generateHSET(person,entityId+""));
                 GearsBuilder.setAvoidNotifications(avoidNotifications);
-                GearsBuilder.log("PersonRefreshAhead.GearsBuilder.executeArray " + response, LogLevel.DEBUG);
+                GearsBuilder.log("PersonRefreshAhead.GearsBuilder.executeArray " + response);
             }
         } catch (Throwable t) {
             t.printStackTrace();

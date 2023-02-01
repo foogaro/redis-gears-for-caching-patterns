@@ -34,7 +34,7 @@ public class PersonWriteBehind extends WriteBehind {
             person.setAge(Integer.parseInt(hash.get("age")));
 
             HibernateUtils.saveOrUpdate(person);
-            GearsBuilder.log("PersonWriteBehind.Record " + record.getHashVal() + " processed.", LogLevel.DEBUG);
+            GearsBuilder.log("PersonWriteBehind.Record " + record.getHashVal() + " processed.");
         } catch (Throwable t) {
             t.printStackTrace();
         }
