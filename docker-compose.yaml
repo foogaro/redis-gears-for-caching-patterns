@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  mysqldb:
+  mysql:
     image: mysql:8.0.31
     container_name: mysql
     restart: unless-stopped
@@ -11,12 +11,38 @@ services:
       - MYSQL_DATABASE=$MYSQLDB_DATABASE
     ports:
       - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
+    volumes:
+      - ./mysql-conf-d:/etc/mysql/conf.d
+      - ./mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 5s
+      retries: 10
     networks:
-      - redis-workshop
+      - demo
+  mysql-setup:
+    image: mysql:8.0.31
+    container_name: mysql-setup
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: [ "bash", "-c", "/tmp/mysql-setup.sh"]
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQLDB_DATABASE
+    volumes:
+      - ./mysql-setup.sh:/tmp/mysql-setup.sh
+      - ./mysql-setup.sql:/tmp/mysql-setup.sql
+    networks:
+      - demo
   redis:
     image: redislabs/redisgears:1.2.5
     container_name: redis
-    restart: on-failure
+    restart: unless-stopped
+    depends_on:
+      - mysql-setup
     cap_add:
       - SYS_RESOURCE
     env_file: ./.env
@@ -28,24 +54,40 @@ services:
       - ./target/redis-gears-for-caching-patterns-1.0.0.jar:/tmp/redis-gears-for-caching-patterns-1.0.0.jar
     stdin_open: true
     tty: true
-    depends_on:
-      - mysqldb
     networks:
-      - redis-workshop
+      - demo
   redis-setup:
     image: redislabs/redisgears:1.2.5
     container_name: redis-setup
+    restart: "no"
     depends_on:
       - redis
-    restart: "no"
-    entrypoint: [ "bash", "-c", "/tmp/register-triggers.sh"]
+    entrypoint: [ "bash", "-c", "/tmp/redis-setup.sh"]
     volumes:
       - ./target/redis-gears-for-caching-patterns-1.0.0.jar:/tmp/redis-gears-for-caching-patterns-1.0.0.jar
-      - ./register-triggers.sh:/tmp/register-triggers.sh
+      - ./redis-setup.sh:/tmp/redis-setup.sh
     networks:
-      - redis-workshop
+      - demo
+  debezium:
+    image: debezium/server
+    container_name: debezium
+    restart: "no"
+    depends_on:
+      - redis
+    entrypoint: [ "echo", "Service debezium temporary disabled" ]
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQLDB_DATABASE
+    ports:
+      - $DEBEZIUM_LOCAL_PORT:$DEBEZIUM_DOCKER_PORT
+    volumes:
+      - ./debezium-conf:/debezium/conf
+      - ./debezium-data:/debezium/data
+    networks:
+      - demo
 networks:
-  redis-workshop:
+  demo:
     driver: bridge
     ipam:
       driver: default
