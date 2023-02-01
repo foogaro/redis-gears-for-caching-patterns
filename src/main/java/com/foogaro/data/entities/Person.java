@@ -10,7 +10,7 @@ public class Person implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
+    private String firstname;
     private String lastname;
     private int age;
 
@@ -25,12 +25,12 @@ public class Person implements Serializable {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstname() {
+        return firstname;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstname(String firstname) {
+        this.firstname = firstname;
     }
 
     public String getLastname() {
@@ -53,7 +53,7 @@ public class Person implements Serializable {
     public String toString() {
         return "Person{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", firstname='" + firstname + '\'' +
                 ", lastname='" + lastname + '\'' +
                 ", age=" + age +
                 '}';

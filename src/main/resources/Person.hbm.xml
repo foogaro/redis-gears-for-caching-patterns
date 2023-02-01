@@ -4,7 +4,7 @@
 <hibernate-mapping>
     <class name="com.foogaro.data.entities.Person" table="person">
         <id name="id"/>
-        <property name="name"/>
+        <property name="firstname"/>
         <property name="lastname"/>
         <property name="age"/>
     </class>
