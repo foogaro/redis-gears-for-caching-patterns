@@ -544,6 +544,9 @@ The pattern Read-Replica comes from the Change Data Capture software design prin
 The solution is based on Debezium, a well known open-source project sponsored by Red Hat &reg;&copy;&trade;, which provides many connectors (aka Source Connectors), to detect changes happening in the source databases (PostgreSQL, MySQL, Oracle, MS SQL Server, DB2, MongoDB, Cassandra, Vitess, Spanner).
 In addition to the Source Connectors, Debezium provides even more Sink Connectors, whose goal is to push those changes to other systems.
 
+![Change-Data-Capture](images/Change-Data-Capture.png)
+
+
 Debezium provides the Redis Sink Connector, which is used in this demo.
 
 The following Docker configuration has been added to the ```docker-compose.yaml``` file:
@@ -630,7 +633,7 @@ root@7093c6289bbc:/data# redis-cli
 127.0.0.1:6379>
 ```
 
-Debezium already created its staff to use Redis, both as internal storage (did you notice that we didn't use a Kafka cluster at all???) and to push the changes to.
+Debezium already has the logic to use Redis, both as internal storage and to push the changes to.
 
 Let's add a new record for the table Person into MySQL, by connecting to the MySQL, as follows:
 
@@ -678,7 +681,8 @@ redis        | 1:M 01 Feb 2023 17:16:06.898 * <module> JAVA_GEARS: PersonReadRep
 
 All looks good.
 
-Inside redis
+Inside redis:
+
 ```shell
 127.0.0.1:6379> keys *
 1) "vdt.vdt.person"
@@ -697,8 +701,7 @@ Key ```person:1``` is the key which represent the corresponding record in MySQL,
 3) "Fugaro"
 4) "44"
 ```
-
-Key ```vdt.vdt.person``` is the key used by Debezium to store event information, and it's a Redis Stream type:
+MySQL's tables are mapped 1:1 to Redis streams, so key ```vdt.vdt.person``` is the key generated and used by Debezium to store event information for the person table, and that key is of type Redis Stream:
 
 ```shell
 127.0.0.1:6379> type vdt.vdt.person
@@ -710,16 +713,18 @@ stream
             2) "{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"firstname\"},{\"type\":\"string\",\"optional\":true,\"field\":\"lastname\"},{\"type\":\"int32\",\"optional\":true,\"field\":\"age\"}],\"optional\":true,\"name\":\"vdt.vdt.person.Value\",\"field\":\"before\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"int32\",\"optional\":false,\"field\":\"id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"firstname\"},{\"type\":\"string\",\"optional\":true,\"field\":\"lastname\"},{\"type\":\"int32\",\"optional\":true,\"field\":\"age\"}],\"optional\":true,\"name\":\"vdt.vdt.person.Value\",\"field\":\"after\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},{\"type\":\"string\",\"optional\":false,\"field\":\"name\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"ts_ms\"},{\"type\":\"string\",\"optional\":true,\"name\":\"io.debezium.data.Enum\",\"version\":1,\"parameters\":{\"allowed\":\"true,last,false,incremental\"},\"default\":\"false\",\"field\":\"snapshot\"},{\"type\":\"string\",\"optional\":false,\"field\":\"db\"},{\"type\":\"string\",\"optional\":true,\"field\":\"sequence\"},{\"type\":\"string\",\"optional\":true,\"field\":\"table\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"server_id\"},{\"type\":\"string\",\"optional\":true,\"field\":\"gtid\"},{\"type\":\"string\",\"optional\":false,\"field\":\"file\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"pos\"},{\"type\":\"int32\",\"optional\":false,\"field\":\"row\"},{\"type\":\"int64\",\"optional\":true,\"field\":\"thread\"},{\"type\":\"string\",\"optional\":true,\"field\":\"query\"}],\"optional\":false,\"name\":\"io.debezium.connector.mysql.Source\",\"field\":\"source\"},{\"type\":\"string\",\"optional\":false,\"field\":\"op\"},{\"type\":\"int64\",\"optional\":true,\"field\":\"ts_ms\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"string\",\"optional\":false,\"field\":\"id\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"total_order\"},{\"type\":\"int64\",\"optional\":false,\"field\":\"data_collection_order\"}],\"optional\":true,\"name\":\"event.block\",\"version\":1,\"field\":\"transaction\"}],\"optional\":false,\"name\":\"vdt.vdt.person.Envelope\",\"version\":1},\"payload\":{\"before\":null,\"after\":{\"id\":1,\"firstname\":\"Luigi\",\"lastname\":\"Fugaro\",\"age\":44},\"source\":{\"version\":\"2.2.0.Alpha1\",\"connector\":\"mysql\",\"name\":\"vdt\",\"ts_ms\":1675271766000,\"snapshot\":\"false\",\"db\":\"vdt\",\"sequence\":null,\"table\":\"person\",\"server_id\":1,\"gtid\":\"9687809c-a253-11ed-b30d-0242ac200002:13\",\"file\":\"mysql-bin.000003\",\"pos\":2105,\"row\":0,\"thread\":17,\"query\":null},\"op\":\"c\",\"ts_ms\":1675271766219,\"transaction\":null}}"
 ```
 
-The first element is the name of the stream.
-
-The second element represent the timestamp of the generated event, plus a sequence ID.
-
-The last two elements are the effective payload of the event.
-
-The first one gives you a reference of the primary key of the record and its value, as a JSON document (easier to extract information).
-
-The second one is another JSON document where you can find "useful" metadata (depends on how deep your interest is) and the record at ```before``` (think of it as at time-0) and the record at ```after``` (think of it as at time-1).
+And as we read the stream using the **XREAD** command above, what we get is: 
+1. the name of the stream;
+2. the timestamp of the generated event (Redis adds also a sequence number, that is used for entries created in the same millisecond. Since the sequence number is 64 bit wide, in practical terms there is no limit to the number of entries that can be generated within the same millisecond).
+3. a JSON document referencing the metadata about the impacted primary key on the database side;
+4. a JSON document referencing the changes of state, with a before and after state snapshots at columns grained level. 
 
 By processing the event and its payload you can clearly understand which key you need to manage in Redis, if it's a new key (insert), old key (update), or a delete operation, in that case payload-before would be not null and payload-after would be null.
 
+## Where is Kafka?
 
+If you didn't notice, there is no Kafka cluster running, that's because the architecture used Debezium Server, and the reliability of the event store is implemented directly in Redis as persistent data store.
+
+The fact that Redis is also the caching layer, easy the logic to update application's caches.
+
+That's all Folks. 
