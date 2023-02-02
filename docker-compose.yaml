@@ -12,12 +12,14 @@ services:
     ports:
       - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
     volumes:
-      - ./mysql-conf-d:/etc/mysql/conf.d
-      - ./mysql-data:/var/lib/mysql
+      - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./mysql-data/var/lib/mysql:/var/lib/mysql
     healthcheck:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 30s
       timeout: 5s
       retries: 10
+      start_period: 60s
     networks:
       - demo
   mysql-setup:
