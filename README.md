@@ -1,13 +1,29 @@
 # Caching Patterns
 
 ## Introduction
-Caching patterns are well known techniques to keep your data up to date in your caching layer.
+Caching patterns are well known techniques to access and keep data up to date in your caching layer.
 
 One of the biggest challenges, it's to have data in the cache with the same state of the data in to the persistent datastore, that is the database.
 
-In this example I'll explain the most common patterns and how to implement them using Java 11, Redis and MySQL.
+Most of the time, the synchronization between the cache and database is done at application level by implementing a dual write.
+Unfortunately this technique is just another problem to solve, in fact if one of the two writes fails, you might end up with inconsistent data.
 
-For sake of simplicity, the architecture will be based on Linux containers.
+Here is an example of a high level architecture for a dual write:
+
+![Mutable operations without caching pattern](images/No-Patterns-1.png)
+
+In case of reading data, the application needs to check if the data is available in cache, and if not, the application has to fetch ("1") the data from the database, put ("2") into the cache and then send it back to the requester.
+This technique is known with name of Cache-Aside or Lazy-Loading pattern, that will be also describe in the [next](#cache-aside-lazy-loading-read) section.
+
+Here is an example of a high level architecture for such pattern:
+
+![Immutable operations without caching pattern](images/No-Patterns-2.png)
+
+In the next section I'll explain the most common patterns and how to implement them efficiently using Java 11, Redis and MySQL (it can be any database).
+
+For sake of simplicity, the architecture will be based on Linux containers, using the Docker format image and Docker Compose to run them all together.
+
+![Docker Compose](images/docker-compose.png)
 
 ## Most common Caching Patterns
 Here is the list of the most common used caching patterns:
@@ -544,7 +560,7 @@ The pattern Read-Replica comes from the Change Data Capture software design prin
 The solution is based on Debezium, a well known open-source project sponsored by Red Hat &reg;&copy;&trade;, which provides many connectors (aka Source Connectors), to detect changes happening in the source databases (PostgreSQL, MySQL, Oracle, MS SQL Server, DB2, MongoDB, Cassandra, Vitess, Spanner).
 In addition to the Source Connectors, Debezium provides even more Sink Connectors, whose goal is to push those changes to other systems.
 
-![Change-Data-Capture](images/Change-Data-Capture.png)
+![Change-Data-Capture](images/App-Cache-Db.png)
 
 
 Debezium provides the Redis Sink Connector, which is used in this demo.
