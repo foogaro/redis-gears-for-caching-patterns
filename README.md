@@ -10,20 +10,20 @@ Unfortunately this technique is just another problem to solve, in fact if one of
 
 Here is an example of a high level architecture for a dual write:
 
-<p style="text-align: center;"><img src="images/No-Patterns-1.png" width="600" alt="Mutable operations without caching pattern" /></p>
+<p align="center"><img src="images/No-Patterns-1.png" width="600" alt="Mutable operations without caching pattern" /></p>
 
 In case of reading data, the application needs to check if the data is available in cache, and if not, the application has to fetch ("1") the data from the database, put ("2") into the cache and then send it back to the requester.
 This technique is known with name of Cache-Aside or Lazy-Loading pattern, that will be also describe in the [next](#cache-aside-lazy-loading-read) section.
 
 Here is an example of a high level architecture for such pattern:
 
-<p style="text-align: center;"><img src="images/No-Patterns-2.png" width="600" alt="Immutable operations without caching pattern" /></p>
+<p align="center"><img src="images/No-Patterns-2.png" width="600" alt="Immutable operations without caching pattern" /></p>
 
 In the next section I'll explain the most common patterns and how to implement them efficiently using Java 11, Redis and MySQL (it can be any database).
 
 For sake of simplicity, the architecture will be based on Linux containers, using the Docker format image and Docker Compose to run them all together.
 
-<p style="text-align: center;"><img src="images/docker-compose.png" width="453" alt="Docker Compose" /></p>
+<p align="center"><img src="images/docker-compose.png" width="453" alt="Docker Compose" /></p>
 
 ## Most common Caching Patterns
 Here is the list of the most common used caching patterns:
@@ -43,7 +43,7 @@ If the data is available, it gets returned immediately to the requester.
 If the data is __not__ available, the service looks for it into the database.
 Once the data is retrieved from the database, it gets also set into the cache for later use, and finally returned to the requester.
 
-<p style="text-align: center;"><img src="images/Cache-Aside-AL.png" width="600" alt="Cache Aside" /></p>
+<p align="center"><img src="images/Cache-Aside-AL.png" width="600" alt="Cache Aside" /></p>
 
 More detail in the [Caching at application layer](#caching-at-application-layer) section.
 
@@ -61,7 +61,7 @@ Once the data is retrieved from the database, it gets set into the cache for lat
 
 More detail in the demo [section](#pattern-read-through).
 
-<p style="text-align: center;"><img src="images/Read-Through-CL.png" width="600" alt="Read-Through" /></p>
+<p align="center"><img src="images/Read-Through-CL.png" width="600" alt="Read-Through" /></p>
 
 ### Write-Through
 This pattern describes how the data should be stored.
@@ -73,7 +73,7 @@ The caching layer, Redis, stores the data, and then sends the data to be written
 
 Then entire chain is synchronous.
 
-<p style="text-align: center;"><img src="images/Write-Through-AL.png" width="600" alt="Write-Through" /></p>
+<p align="center"><img src="images/Write-Through-AL.png" width="600" alt="Write-Through" /></p>
 
 Moving the logic from the application layer to the cache layer.
 
@@ -81,7 +81,7 @@ This can be done by using standard library API, or by using proprietary caching 
 
 More detail in the demo [section](#pattern-write-through).
 
-<p style="text-align: center;"><img src="images/Write-Through-CL.png" width="600" alt="Write-Through" /></p>
+<p align="center"><img src="images/Write-Through-CL.png" width="600" alt="Write-Through" /></p>
 
 ### Write-Behind (Write-back)
 This pattern describes how the data should be stored.
@@ -93,27 +93,27 @@ The caching layer, Redis, stores the data, and then sends the data to be written
 
 The last step of the chain is asynchronous, that is Redis calling the persistence layer.
 
-<p style="text-align: center;"><img src="images/Write-Behind-AL.png" width="600" alt="Write-Behind" /></p>
+<p align="center"><img src="images/Write-Behind-AL.png" width="600" alt="Write-Behind" /></p>
 
 Moving the logic from the application layer to the cache layer.
 
 This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best for your use case.
 
-<p style="text-align: center;"><img src="images/Write-Behind-CL.png" width="600" alt="Write-Behind" /></p>
+<p align="center"><img src="images/Write-Behind-CL.png" width="600" alt="Write-Behind" /></p>
 
 More detail in the demo [section](#pattern-write-behind).
 
 ### Refresh Ahead
 This pattern describes how the data can be updated automatically whenever it's expired.
 
-<p style="text-align: center;"><img src="images/Refresh-Ahead-CL.png" width="600" alt="Refresh-Ahead" /></p>
+<p align="center"><img src="images/Refresh-Ahead-CL.png" width="600" alt="Refresh-Ahead" /></p>
 
 More detail in the demo [section](#pattern-refresh-ahead).
 
 ### Read Replica
 This pattern describes how the data can be updated automatically from the database to the caching layer.
 
-<p style="text-align: center;"><img src="images/Read-Replica-CL.png" width="600" alt="Read-Replica" /></p>
+<p align="center"><img src="images/Read-Replica-CL.png" width="600" alt="Read-Replica" /></p>
 
 More detail in the demo [section](#pattern-read-replica).
 
@@ -125,12 +125,12 @@ The caching layer is basically composed by two main components:
 ## Redis
 Redis is the well known in-memory multi-model database, that is used as distributed cache, primary database, pubsub, streams, and so on.
 
-<p style="text-align: center;"><img src="images/redis-logo-full-color-rgb.png" width="369" alt="Redis" /></p>
+<p align="center"><img src="images/redis-logo-full-color-rgb.png" width="369" alt="Redis" /></p>
 
 ## RedisGears
 Redis provides a way to add custom logic (your code) into its engine, by using RedisGears, which is a serverless engine.
 
-<p style="text-align: center;"><img src="images/redisGears-white.png" width="455" alt="RedisGears" /></p>
+<p align="center"><img src="images/redisGears-white.png" width="455" alt="RedisGears" /></p>
 
 As a Serverless engine, RedisGears supports three programming languages:
 - C
@@ -144,7 +144,7 @@ However, if you still want the whole control to be at application layer, Spring 
 ## Caching at application layer
 Using Spring is the key point to easy the entire process, without adding any custom logic to Redis.
 
-<p style="text-align: center;"><img src="images/spring-data.png" width="600" alt="Spring Data" /></p>
+<p align="center"><img src="images/spring-data.png" width="600" alt="Spring Data" /></p>
 
 The integration between the application and Redis is delegated to Spring using its
 ```@EnableCaching``` annotation,
@@ -560,7 +560,7 @@ The pattern Read-Replica comes from the Change Data Capture software design prin
 The solution is based on Debezium, a well known open-source project sponsored by Red Hat &reg;&copy;&trade;, which provides many connectors (aka Source Connectors), to detect changes happening in the source databases (PostgreSQL, MySQL, Oracle, MS SQL Server, DB2, MongoDB, Cassandra, Vitess, Spanner).
 In addition to the Source Connectors, Debezium provides even more Sink Connectors, whose goal is to push those changes to other systems.
 
-<p style="text-align: center;"><img src="images/App-Cache-Db.png" width="600" alt="Change-Data-Capture" /></p>
+<p align="center"><img src="images/App-Cache-Db.png" width="600" alt="Change-Data-Capture" /></p>
 
 Debezium provides the Redis Sink Connector, which is used in this demo.
 
