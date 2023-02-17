@@ -27,12 +27,12 @@ For sake of simplicity, the architecture will be based on Linux containers, usin
 
 ## Most common Caching Patterns
 Here is the list of the most common used caching patterns:
-- Cache-Aside (Lazy-loading)
-- Read-Through
-- Write-Through
-- Write-Behind (Write-back)
-- Refresh Ahead
-- Read Replica
+- [Cache-Aside (Lazy-loading)](#cache-aside--lazy-loading--read)
+- [Read-Through](#read-through)
+- [Write-Through](#write-through)
+- [Write-Behind (Write-back)](#write-behind--write-back-)
+- [Refresh-Ahead](#refresh-ahead--read-ahead-)
+- [Read-Replica](#read-replica)
 
 ### Cache-Aside (Lazy-loading) read
 This pattern describes how the data should be retrieved.
@@ -59,9 +59,9 @@ If the data is available, it gets returned immediately to the service.
 If the data is __not__ available, Redis looks for it into the database.
 Once the data is retrieved from the database, it gets set into the cache for later use, and finally returned to the service, and then to the requester.
 
-More detail in the demo [section](#pattern-read-through).
-
 <p align="center"><img src="images/Read-Through-CL.png" width="600" alt="Read-Through" /></p>
+
+More detail in the demo [section](#pattern-read-through).
 
 ### Write-Through
 This pattern describes how the data should be stored.
@@ -73,15 +73,12 @@ The caching layer, Redis, stores the data, and then sends the data to be written
 
 Then entire chain is synchronous.
 
-<p align="center"><img src="images/Write-Through-AL.png" width="600" alt="Write-Through" /></p>
+<p align="center"><img src="images/Write-Through-CL.png" width="600" alt="Write-Through" /></p>
 
-Moving the logic from the application layer to the cache layer.
-
-This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best for your use case.
+This pattern could also be implemented at application layer, but it would end up in implementing the dual write, an anti-pattern.
 
 More detail in the demo [section](#pattern-write-through).
 
-<p align="center"><img src="images/Write-Through-CL.png" width="600" alt="Write-Through" /></p>
 
 ### Write-Behind (Write-back)
 This pattern describes how the data should be stored.
@@ -93,25 +90,34 @@ The caching layer, Redis, stores the data, and then sends the data to be written
 
 The last step of the chain is asynchronous, that is Redis calling the persistence layer.
 
-<p align="center"><img src="images/Write-Behind-AL.png" width="600" alt="Write-Behind" /></p>
-
-Moving the logic from the application layer to the cache layer.
-
-This can be done by using standard library API, or by using proprietary caching API provided by the vendor, so whatever works best for your use case.
-
 <p align="center"><img src="images/Write-Behind-CL.png" width="600" alt="Write-Behind" /></p>
+
+Again, this pattern could also be implemented at application layer, but it would end up in implementing the dual write, an anti-pattern.
 
 More detail in the demo [section](#pattern-write-behind).
 
-### Refresh Ahead
-This pattern describes how the data can be updated automatically whenever it's expired.
+### Refresh-Ahead (Read-Ahead)
+
+The Refresh-Ahead cache strategy, also known as Read-Ahead, involves pre-emptively refreshing cached data before it becomes stale.
+By refreshing the data before it expires, and doing so asynchronously, end-users can avoid experiencing any delay caused by the refresh.
+
+Additionally, this approach can help prevent a Cache Stampede from occurring.
 
 <p align="center"><img src="images/Refresh-Ahead-CL.png" width="600" alt="Refresh-Ahead" /></p>
 
 More detail in the demo [section](#pattern-refresh-ahead).
 
-### Read Replica
+### Read-Replica
 This pattern describes how the data can be updated automatically from the database to the caching layer.
+
+In database management, a read replica is a copy of a database that is created for the purpose of serving read-only queries, such as SELECT statements.
+A read replica is typically created to offload read traffic from the primary database and to distribute read queries across multiple copies of the data, which can improve query performance and scalability.
+
+That's why a caching system can be used as rad replica, to boost overall performance and scalability.
+
+It's worth noting that read replicas are typically asynchronous, which means that there may be some delay between when data is written to the primary database and when it becomes available on the read replica, that is the caching layer.
+However, this delay is usually minimal and is generally outweighed by the benefits of improved read performance and scalability.
+
 
 <p align="center"><img src="images/Read-Replica-CL.png" width="600" alt="Read-Replica" /></p>
 
@@ -140,6 +146,15 @@ As a Serverless engine, RedisGears supports three programming languages:
 JavaScript is coming soon...
 
 However, if you still want the whole control to be at application layer, Spring and its caching capabilities, that is what you are looking for.
+
+## Redis Enterprise
+Redis (the Company) provides an enterprise grade Data Integration & Transformation product called __Redis Data Integration__ for Redis Enterprise.
+
+<p align="center"><img src="images/redis-di-simplified.png" width="600" alt="Redis Data Integration" /></p>
+
+Detailed information are available at the following link:
+- [https://redis-data-integration.docs.dev.redislabs.com/](https://redis-data-integration.docs.dev.redislabs.com/)
+ 
 
 ## Caching at application layer
 Using Spring is the key point to easy the entire process, without adding any custom logic to Redis.
@@ -211,13 +226,18 @@ public class ActorService {
 ```
 
 ### @Cacheable
-That's the Spring annotation to use when you want to cache whatever you are looking for in your persistence layer.
+In Spring Framework, ```@Cacheable``` is an annotation that you can use to cache the results of a method.
+When you add this annotation to a method, Spring will check if the method has already been called with the same arguments.
+If it has, Spring will return the cached result instead of executing the method again.
+
 
 ### @CachePut
-That's the Spring annotation to use when you want to update whatever you are updating in your persistence layer.
+In Spring Framework, ```@CachePut``` is another caching annotation that you can use to update the cached value for a method.
+Unlike ```@Cacheable```, which only reads from the cache, ```@CachePut``` will always execute the method and update the cache with the new result.
 
 ### @CacheEvict
-That's the Spring annotation to use when you want to delete whatever you are deleting from your persistence layer.
+In Spring Framework, ```@CacheEvict``` is a caching annotation that you can use to remove an entry from the cache.
+When you annotate a method with ```@CacheEvict```, Spring will remove the cached value for the method's input arguments from the specified cache.
 
 # Demo
 It shouldn't be too complex. The demo is based on git and Docker Compose, which should be already in your environment, if not, follow the instructions for your specific OS at the following links:
